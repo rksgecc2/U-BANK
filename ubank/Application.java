@@ -2,6 +2,10 @@ package com.upgrad.ubank;
 
 import com.upgrad.ubank.dtos.Account;
 import com.upgrad.ubank.dtos.Transaction;
+import com.upgrad.ubank.exceptions.AccountAlreadyRegisteredException;
+import com.upgrad.ubank.exceptions.AccountNotFoundException;
+import com.upgrad.ubank.exceptions.IncorrectPasswordException;
+import com.upgrad.ubank.exceptions.InsufficientBalanceException;
 import com.upgrad.ubank.services.*;
 
 import java.util.Scanner;
@@ -76,12 +80,21 @@ public class Application {
 
         Account account = getAccountFromUser();
 
-        if (accountService.login(account)) {
-            System.out.println("You are logged in.");
-            isLoggedIn = true;
-            loggedInAccountNo = account.getAccountNo();
-        } else {
-            System.out.println("Incorrect Username / Password");
+        try {
+            if (accountService.login(account)) {
+                System.out.println("You are logged in.");
+                isLoggedIn = true;
+                loggedInAccountNo = account.getAccountNo();
+            }
+        } catch (NullPointerException e) {
+            //code to execute when account object was null
+            System.out.println(e.getMessage());
+        } catch (AccountNotFoundException e) {
+            //code to execute when account no was not found
+            System.out.println(e.getMessage());
+        } catch (IncorrectPasswordException e) {
+            //code to execute when password is incorrect.
+            System.out.println(e.getMessage());
         }
     }
 
@@ -101,18 +114,34 @@ public class Application {
 
         Account account = getAccountFromUser();
 
-        if (accountService.register(account)) {
-            System.out.println("You are logged in.");
-            isLoggedIn = true;
-            loggedInAccountNo = account.getAccountNo();
-        } else {
-            System.out.println("User already exists.");
+        try {
+            if (accountService.register(account)) {
+                System.out.println("You are logged in.");
+                isLoggedIn = true;
+                loggedInAccountNo = account.getAccountNo();
+            }
+        } catch (NullPointerException e) {
+            //code to execute when account object was null
+            System.out.println(e.getMessage());
+        } catch (AccountAlreadyRegisteredException e) {
+            //code to execute when account already registered
+            System.out.println(e.getMessage());
         }
     }
 
     private Account getAccountFromUser() {
         System.out.print("Account No.:");
-        int accountNo = Integer.parseInt(scan.nextLine());
+        int accountNo = 0;
+
+        try {
+            accountNo = Integer.parseInt(scan.nextLine());
+            System.out.println("You entered: " + accountNo);
+        } catch (NumberFormatException e) {
+            System.out.println("Account number should be in numeric form.");
+            return null;
+        } finally {
+            System.out.println("Current account no: " + accountNo);
+        }
 
         System.out.print("Password:");
         String password = scan.nextLine();
@@ -133,7 +162,11 @@ public class Application {
         System.out.println("*******Account*******");
         System.out.println("*********************");
 
-        System.out.println(accountService.getAccount(loggedInAccountNo));
+        try {
+            System.out.println(accountService.getAccount(loggedInAccountNo));
+        } catch (AccountNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     private void deposit () {
@@ -147,13 +180,21 @@ public class Application {
         System.out.println("*********************");
 
         System.out.print("Amount: ");
-        int amount = Integer.parseInt(scan.nextLine());
+        int amount = 0;
 
-        Account account = accountService.deposit(loggedInAccountNo, amount);
-        if (account == null) {
-            System.out.println("Could not deposit into account.");
-        } else {
+        try {
+            amount = Integer.parseInt(scan.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println("Amount should be in numeric form");
+            return;
+        }
+
+        Account account = null;
+        try {
+            account = accountService.deposit(loggedInAccountNo, amount);
             System.out.println("Money successfully deposited into account.");
+        } catch (AccountNotFoundException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -168,13 +209,23 @@ public class Application {
         System.out.println("*********************");
 
         System.out.print("Amount: ");
-        int amount = Integer.parseInt(scan.nextLine());
+        int amount = 0;
 
-        Account account = accountService.withdraw(loggedInAccountNo, amount);
-        if (account == null) {
-            System.out.println("Could not withdraw from account.");
-        } else {
+        try {
+            amount = Integer.parseInt(scan.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println("Amount should be in numeric form");
+            return;
+        }
+
+        Account account = null;
+        try {
+            account = accountService.withdraw(loggedInAccountNo, amount);
             System.out.println("Money successfully withdrawn from account.");
+        } catch (AccountNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (InsufficientBalanceException e) {
+            System.out.println(e.getMessage());
         }
     }
 
